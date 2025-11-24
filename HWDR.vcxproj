@@ -113,6 +113,7 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -131,20 +132,36 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>opencv_world4120.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="chr_cnn.cpp" />
+    <ClCompile Include="activation_function.cpp" />
+    <ClCompile Include="convolve_layer.cpp" />
+    <ClCompile Include="filter.cpp" />
+    <ClCompile Include="full_connect_layer.cpp" />
+    <ClCompile Include="image_process.cpp" />
+    <ClCompile Include="le_net5.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="mnist_data.cpp" />
+    <ClCompile Include="pool_layer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="chr_cnn.hpp" />
+    <ClInclude Include="activation_function.hpp" />
+    <ClInclude Include="convolve_layer.hpp" />
+    <ClInclude Include="filter.hpp" />
+    <ClInclude Include="full_connect_layer.hpp" />
+    <ClInclude Include="image_process.hpp" />
+    <ClInclude Include="le_net5.hpp" />
+    <ClInclude Include="main.hpp" />
+    <ClInclude Include="mnist_data.hpp" />
+    <ClInclude Include="pool_layer.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

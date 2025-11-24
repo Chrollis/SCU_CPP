@@ -18,12 +18,57 @@
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="chr_cnn.cpp">
+    <ClCompile Include="mnist_data.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="image_process.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="activation_function.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="filter.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="pool_layer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="full_connect_layer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="convolve_layer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="le_net5.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="chr_cnn.hpp">
+    <ClInclude Include="mnist_data.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="image_process.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="main.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="activation_function.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="filter.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="pool_layer.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="full_connect_layer.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="convolve_layer.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="le_net5.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
