@@ -5,6 +5,7 @@
 #include <QObject>
 
 namespace chr {
+
 class cnn_base : public QObject {
     Q_OBJECT
 public:
@@ -13,13 +14,13 @@ public:
     virtual std::vector<Eigen::MatrixXd> backward(size_t label, double learning_rate) = 0;
     double train(const std::vector<mnist_data>& dataset, size_t epochs, double learning_rate, bool show_detail = 0);
     size_t predict(const Eigen::VectorXd& output); // 预测函数
+    static std::string model_type_of(const std::filesystem::path& path);
     virtual void save(const std::filesystem::path& path) = 0;
     virtual void load(const std::filesystem::path& path) = 0;
-    virtual void save_binary(const std::filesystem::path& path) = 0;
-    virtual void load_binary(const std::filesystem::path& path) = 0;
     virtual std::string model_type() const = 0;
+
 signals:
-    void inform(const std::string& output);
+    void inform(const QString& output);
     void train_details(double progress, double loss, size_t correct, size_t total);
 
 protected:

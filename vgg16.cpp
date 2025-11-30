@@ -1,4 +1,5 @@
 #include "vgg16.hpp"
+#include "language_manager.h"
 #include <fstream>
 
 namespace chr {
@@ -86,52 +87,9 @@ std::vector<Eigen::MatrixXd> vgg16::backward(size_t label, double learning_rate)
 }
 void vgg16::save(const std::filesystem::path& path)
 {
-    std::filesystem::create_directory(path);
-    conv1_.save(path / "conv1");
-    conv2_.save(path / "conv2");
-    conv3_.save(path / "conv3");
-    conv4_.save(path / "conv4");
-    conv5_.save(path / "conv5");
-    conv6_.save(path / "conv6");
-    conv7_.save(path / "conv7");
-    conv8_.save(path / "conv8");
-    conv9_.save(path / "conv9");
-    conv10_.save(path / "conv10");
-    conv11_.save(path / "conv11");
-    conv12_.save(path / "conv12");
-    conv13_.save(path / "conv13");
-    fc1_.save(path / "fc1.txt");
-    fc2_.save(path / "fc2.txt");
-    fc3_.save(path / "fc3.txt");
-    emit inform("VGG16 model saved to: " + path.string());
-}
-void vgg16::load(const std::filesystem::path& path)
-{
-    std::filesystem::create_directory(path);
-    conv1_.load(path / "conv1");
-    conv2_.load(path / "conv2");
-    conv3_.load(path / "conv3");
-    conv4_.load(path / "conv4");
-    conv5_.load(path / "conv5");
-    conv6_.load(path / "conv6");
-    conv7_.load(path / "conv7");
-    conv8_.load(path / "conv8");
-    conv9_.load(path / "conv9");
-    conv10_.load(path / "conv10");
-    conv11_.load(path / "conv11");
-    conv12_.load(path / "conv12");
-    conv13_.load(path / "conv13");
-    fc1_.load(path / "fc1.txt");
-    fc2_.load(path / "fc2.txt");
-    fc3_.load(path / "fc3.txt");
-    emit inform("VGG16 model loaded from: " + path.string());
-}
-
-void vgg16::save_binary(const std::filesystem::__cxx11::path& path)
-{
     std::ofstream file(path, std::ios::binary);
     if (!file.is_open()) {
-        throw std::runtime_error("Failed to open file for saving: " + path.string());
+        throw std::runtime_error(chr::tr("error.file.save_failed").arg(path.string()).toStdString());
     }
     // 写入魔数 1128
     uint32_t magic_number = 1128;
@@ -142,37 +100,36 @@ void vgg16::save_binary(const std::filesystem::__cxx11::path& path)
     file.write(reinterpret_cast<const char*>(&type_length), sizeof(type_length));
     file.write(model_type.c_str(), type_length);
     // 保存各层参数
-    conv1_.save_binary(file);
-    conv2_.save_binary(file);
-    conv3_.save_binary(file);
-    conv4_.save_binary(file);
-    conv5_.save_binary(file);
-    conv6_.save_binary(file);
-    conv7_.save_binary(file);
-    conv8_.save_binary(file);
-    conv9_.save_binary(file);
-    conv10_.save_binary(file);
-    conv11_.save_binary(file);
-    conv12_.save_binary(file);
-    conv13_.save_binary(file);
-    fc1_.save_binary(file);
-    fc2_.save_binary(file);
-    fc3_.save_binary(file);
+    conv1_.save(file);
+    conv2_.save(file);
+    conv3_.save(file);
+    conv4_.save(file);
+    conv5_.save(file);
+    conv6_.save(file);
+    conv7_.save(file);
+    conv8_.save(file);
+    conv9_.save(file);
+    conv10_.save(file);
+    conv11_.save(file);
+    conv12_.save(file);
+    conv13_.save(file);
+    fc1_.save(file);
+    fc2_.save(file);
+    fc3_.save(file);
     file.close();
-    emit inform("VGG16 model saved to: " + path.string());
+    emit inform(chr::tr("model.io.saved").arg(this->model_type()).arg(path.string()));
 }
-
-void vgg16::load_binary(const std::filesystem::__cxx11::path& path)
+void vgg16::load(const std::filesystem::path& path)
 {
     std::ifstream file(path, std::ios::binary);
     if (!file.is_open()) {
-        throw std::runtime_error("Failed to open file for loading: " + path.string());
+        throw std::runtime_error(chr::tr("error.file.load_failed").arg(path.string()).toStdString());
     }
     // 读取并验证魔数
     uint32_t magic_number;
     file.read(reinterpret_cast<char*>(&magic_number), sizeof(magic_number));
     if (magic_number != 1128) {
-        throw std::runtime_error("Invalid file format: magic number mismatch");
+        throw std::runtime_error(chr::tr("error.file.invalid_magic_number").toStdString());
     }
     // 读取并验证模型类型
     uint32_t type_length;
@@ -180,26 +137,27 @@ void vgg16::load_binary(const std::filesystem::__cxx11::path& path)
     std::string model_type(type_length, ' ');
     file.read(&model_type[0], type_length);
     if (model_type != this->model_type()) {
-        throw std::runtime_error("Model type mismatch: expected " + this->model_type() + ", got " + model_type);
+        throw std::runtime_error(chr::tr("error.file.model_type_mismatch").arg(this->model_type()).arg(model_type).toStdString());
     }
     // 加载各层参数
-    conv1_.load_binary(file);
-    conv2_.load_binary(file);
-    conv3_.load_binary(file);
-    conv4_.load_binary(file);
-    conv5_.load_binary(file);
-    conv6_.load_binary(file);
-    conv7_.load_binary(file);
-    conv8_.load_binary(file);
-    conv9_.load_binary(file);
-    conv10_.load_binary(file);
-    conv11_.load_binary(file);
-    conv12_.load_binary(file);
-    conv13_.load_binary(file);
-    fc1_.load_binary(file);
-    fc2_.load_binary(file);
-    fc3_.load_binary(file);
+    conv1_.load(file);
+    conv2_.load(file);
+    conv3_.load(file);
+    conv4_.load(file);
+    conv5_.load(file);
+    conv6_.load(file);
+    conv7_.load(file);
+    conv8_.load(file);
+    conv9_.load(file);
+    conv10_.load(file);
+    conv11_.load(file);
+    conv12_.load(file);
+    conv13_.load(file);
+    fc1_.load(file);
+    fc2_.load(file);
+    fc3_.load(file);
     file.close();
-    emit inform("VGG16 model loaded from: " + path.string());
+    emit inform(chr::tr("model.io.loaded").arg(this->model_type()).arg(path.string()));
 }
+
 }

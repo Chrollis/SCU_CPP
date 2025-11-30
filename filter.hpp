@@ -18,9 +18,6 @@ public:
     void initialize_gausz(double stddev); // 高斯初始化
     void initialize_xavier(size_t input_size); // Xavier初始化
     void initialize_He(size_t input_size); // He初始化
-    // 模型保存和加载
-    void save(const std::filesystem::path& path) const;
-    void load(const std::filesystem::path& path);
 };
 }
 

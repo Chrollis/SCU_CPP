@@ -4,7 +4,6 @@
 #include "activation_function.hpp"
 #include "filter.hpp"
 #include <Eigen/Dense>
-#include <filesystem>
 
 namespace chr {
 class convolve_layer {
@@ -24,10 +23,8 @@ public:
     std::vector<Eigen::MatrixXd> forward(const std::vector<Eigen::MatrixXd>& input);
     std::vector<Eigen::MatrixXd> backward(const std::vector<Eigen::MatrixXd>& gradient, double learning_rate, bool is_last_conv = false);
     void weights_update(double learning_rate, const std::vector<Eigen::MatrixXd>& gradient);
-    void save(const std::filesystem::path& path) const;
-    void load(const std::filesystem::path& path);
-    void save_binary(std::ostream& file) const;
-    void load_binary(std::istream& file);
+    void save(std::ostream& file) const;
+    void load(std::istream& file);
 
 private:
     std::vector<Eigen::MatrixXd> padding(const std::vector<Eigen::MatrixXd>& input, size_t circle_num, double fill_num = 0.0) const;

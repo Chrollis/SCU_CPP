@@ -64,38 +64,4 @@ void filter::initialize_He(size_t input_size)
         }
     }
 }
-void filter::save(const std::filesystem::path& path) const
-{
-    std::ofstream file(path);
-    if (file.is_open()) {
-        file << channels_ << " " << core_size_ << " " << bias << "\n";
-        for (size_t i = 0; i < channels_; ++i) {
-            for (size_t row = 0; row < core_size_; ++row) {
-                for (size_t col = 0; col < core_size_; ++col) {
-                    file << kernels[i](row, col) << " ";
-                }
-                file << "\n";
-            }
-            file << "\n";
-        }
-        file.close();
-    }
-}
-void filter::load(const std::filesystem::path& path)
-{
-    std::ifstream file(path);
-    if (file.is_open()) {
-        file >> channels_ >> core_size_ >> bias;
-        kernels.resize(channels_);
-        for (size_t i = 0; i < channels_; ++i) {
-            kernels[i] = Eigen::MatrixXd::Zero(core_size_, core_size_);
-            for (size_t row = 0; row < core_size_; ++row) {
-                for (size_t col = 0; col < core_size_; ++col) {
-                    file >> kernels[i](row, col);
-                }
-            }
-        }
-        file.close();
-    }
-}
 }

@@ -38,7 +38,7 @@ private slots:
     void save_model_as();
     void train_model(bool show_detail);
     void stop_train();
-    void model_inform(const std::string& output);
+    void model_inform(const QString& output);
     void model_train_details(double progress, double loss, size_t correct, size_t total);
     void show_about();
     void show_help();
@@ -48,11 +48,14 @@ private slots:
     void train_label_browse();
     void test_data_browse();
     void test_label_browse();
+    void load_settings();
+    void save_settings();
 
     void update_output(const QString& message);
     void update_train_button(const QString& text);
     void update_status_message(const QString& message);
     void handle_training_finished();
+    void update_ui_language(bool changed, const QString& path);
 
 signals:
     void output_message(const QString& message);
@@ -66,8 +69,6 @@ private:
     void closeEvent(QCloseEvent* event) override;
     void draw_line_to(const QPoint& end_point);
     void output_log(const QString& output);
-    void load_settings();
-    Q_INVOKABLE void save_settings();
 
 private:
     Ui::GraphicsCore* ui_;

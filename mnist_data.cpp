@@ -1,4 +1,5 @@
 #include "mnist_data.hpp"
+#include "language_manager.h"
 #include <fstream>
 
 namespace chr {
@@ -28,10 +29,10 @@ unsigned mnist_data::swap_endian(unsigned val)
 unsigned mnist_data::check_mnist_file(std::ifstream& mnist_images, std::ifstream& mnist_labels)
 {
     if (!mnist_images.is_open()) {
-        throw std::runtime_error("Failed to open MNIST image file");
+        throw std::runtime_error(chr::tr("error.mnist.image_open_failed").toStdString());
     }
     if (!mnist_labels.is_open()) {
-        throw std::runtime_error("Failed to open MNIST label file");
+        throw std::runtime_error(chr::tr("error.mnist.label_open_failed").toStdString());
     }
     unsigned magic = 0;
     unsigned items = 0, labels = 0;
@@ -39,13 +40,13 @@ unsigned mnist_data::check_mnist_file(std::ifstream& mnist_images, std::ifstream
     mnist_images.read(reinterpret_cast<char*>(&magic), 4);
     magic = swap_endian(magic);
     if (magic != 2051) { // MNIST图像文件魔数应为2051
-        throw std::runtime_error("Invalid MNIST image file format");
+        throw std::runtime_error(chr::tr("error.file.invalid_magic_number").toStdString());
     }
     // 检查标签文件魔数
     mnist_labels.read(reinterpret_cast<char*>(&magic), 4);
     magic = swap_endian(magic);
     if (magic != 2049) { // MNIST标签文件魔数应为2049
-        throw std::runtime_error("Invalid MNIST label file format");
+        throw std::runtime_error(chr::tr("error.file.invalid_magic_number").toStdString());
     }
     // 读取数据项数量
     mnist_images.read(reinterpret_cast<char*>(&items), 4);
@@ -53,7 +54,7 @@ unsigned mnist_data::check_mnist_file(std::ifstream& mnist_images, std::ifstream
     mnist_labels.read(reinterpret_cast<char*>(&labels), 4);
     labels = swap_endian(labels);
     if (items != labels) { // 图像和标签数量必须匹配
-        throw std::runtime_error("Image and label file counts do not match");
+        throw std::runtime_error(chr::tr("error.mnist.count_mismatch").toStdString());
     }
     return items;
 }

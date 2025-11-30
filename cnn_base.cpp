@@ -1,22 +1,22 @@
 #include "cnn_base.h"
+#include "language_manager.h"
+#include <fstream>
 
 namespace chr {
 double cnn_base::train(const std::vector<mnist_data>& dataset, size_t epochs, double learning_rate, bool show_detail)
 {
     double sum_accuracy = 0.0;
-    std::ostringstream oss;
     if (show_detail) {
         // 显示当前数据集信息
-        oss << "Current Dataset: ";
+        std::ostringstream oss;
         for (size_t i = 0; i < dataset.size(); i++) {
-            oss << std::to_string(dataset[i].label());
+            oss << dataset[i].label();
             if (i >= 30) {
                 oss << "...";
                 break;
             }
         }
-        oss << " (" << dataset.size() << "samples)";
-        emit inform(oss.str());
+        emit inform(chr::tr("model.train.dataset").arg(oss.str()).arg(dataset.size()));
         oss.clear();
         oss.str("");
         // 训练循环
@@ -44,13 +44,12 @@ double cnn_base::train(const std::vector<mnist_data>& dataset, size_t epochs, do
             double avg_loss = loss / dataset.size();
             double accuracy = static_cast<double>(correct) / dataset.size() * 100.0;
             // 输出epoch结果
-            oss << "Epoch " << epoch + 1
-                << " - Loss: " << std::fixed << std::setprecision(4) << avg_loss
-                << ", Accuracy: " << std::fixed << std::setprecision(2) << accuracy << "%"
-                << " (" << correct << "/" << dataset.size() << ")";
-            emit inform(oss.str());
-            oss.clear();
-            oss.str("");
+            emit inform(chr::tr("model.train.epoch_info")
+                    .arg(epoch + 1)
+                    .arg(avg_loss, 0, 'f', 4)
+                    .arg(accuracy, 0, 'f', 2)
+                    .arg(correct)
+                    .arg(dataset.size()));
             sum_accuracy += accuracy;
         }
     } else {
@@ -70,13 +69,12 @@ double cnn_base::train(const std::vector<mnist_data>& dataset, size_t epochs, do
             double avg_loss = loss / dataset.size();
             double accuracy = static_cast<double>(correct) / dataset.size() * 100.0;
             // 输出epoch结果
-            oss << "Epoch " << epoch + 1
-                << " - Loss: " << std::fixed << std::setprecision(4) << avg_loss
-                << ", Accuracy: " << std::fixed << std::setprecision(2) << accuracy << "%"
-                << " (" << correct << "/" << dataset.size() << ")";
-            emit inform(oss.str());
-            oss.clear();
-            oss.str("");
+            emit inform(chr::tr("model.train.epoch_info")
+                    .arg(epoch + 1)
+                    .arg(avg_loss, 0, 'f', 4)
+                    .arg(accuracy, 0, 'f', 2)
+                    .arg(correct)
+                    .arg(dataset.size()));
             sum_accuracy += accuracy;
         }
     }
@@ -94,6 +92,26 @@ size_t cnn_base::predict(const Eigen::VectorXd& output)
         }
     }
     return max_index;
+}
+
+std::string cnn_base::model_type_of(const std::filesystem::path& path)
+{
+    std::ifstream file(path, std::ios::binary);
+    if (!file.is_open()) {
+        throw std::runtime_error(chr::tr("error.file.load_failed").arg(path.string()).toStdString());
+    }
+    // 读取并验证魔数
+    uint32_t magic_number;
+    file.read(reinterpret_cast<char*>(&magic_number), sizeof(magic_number));
+    if (magic_number != 1128) {
+        throw std::runtime_error(chr::tr("error.file.invalid_magic_number").toStdString());
+    }
+    // 读取并验证模型类型
+    uint32_t type_length;
+    file.read(reinterpret_cast<char*>(&type_length), sizeof(type_length));
+    std::string model_type(type_length, ' ');
+    file.read(&model_type[0], type_length);
+    return model_type;
 }
 Eigen::VectorXd cnn_base::flatten(const std::vector<Eigen::MatrixXd>& matrixs)
 {

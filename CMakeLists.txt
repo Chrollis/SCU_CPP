@@ -36,6 +36,8 @@ qt_add_executable(CNN_HWDR
     full_connect_layer.cpp full_connect_layer.hpp
     le_net5.cpp le_net5.hpp vgg16.cpp vgg16.hpp
     cnn_base.h cnn_base.cpp
+    language_manager.h language_manager.cpp
+
 )
 
 target_link_libraries(CNN_HWDR

@@ -1,4 +1,5 @@
 #include "graphicscore.h"
+#include "language_manager.h"
 #include "le_net5.hpp"
 #include "ui_graphicscore.h"
 #include "vgg16.hpp"
@@ -15,25 +16,24 @@ GraphicsCore::GraphicsCore(QWidget* parent)
     , ui_(new Ui::GraphicsCore)
 {
     ui_->setupUi(this);
-    this->startTimer(33); // 定时器，33ms刷新一次
-    settings_ = new QSettings("./config.ini", QSettings::IniFormat);
-    load_settings(); // 加载配置文件
-    this->setWindowTitle("Chrollis's CNN Handwritten Digit Recognition Application");
-    status_message_ = new QLabel(this);
-    ui_->statusbar->addWidget(status_message_);
-    // 画布事件过滤和属性设置
-    ui_->canvas->installEventFilter(this);
-    ui_->canvas->setAttribute(Qt::WA_StaticContents);
-    ui_->canvas->setMouseTracking(1);
-    // 初始化画布
-    canvas_ = QImage(ui_->canvas->size(), QImage::Format_RGB32);
-    canvas_.fill(Qt::white);
-    update_color();
     // 连接信号槽
     connect(this, &GraphicsCore::output_message, this, &GraphicsCore::update_output);
     connect(this, &GraphicsCore::train_button_text_changed, this, &GraphicsCore::update_train_button);
     connect(this, &GraphicsCore::status_message_changed, this, &GraphicsCore::update_status_message);
     connect(this, &GraphicsCore::training_finished, this, &GraphicsCore::handle_training_finished);
+    connect(&language_manager::instance(), &language_manager::language_changed, this, &GraphicsCore::update_ui_language);
+    // 连接语言功能
+    connect(ui_->action_en_US, &QAction::triggered, this, [&]() { language_manager::instance().load_language("en_US"); });
+    connect(ui_->action_zh_CN, &QAction::triggered, this, [&]() { language_manager::instance().load_language("zh_CN"); });
+    connect(ui_->action_en_UK, &QAction::triggered, this, [&]() { language_manager::instance().load_language("en_UK"); });
+    connect(ui_->action_fr_FR, &QAction::triggered, this, [&]() { language_manager::instance().load_language("fr_FR"); });
+    connect(ui_->action_zh_TW, &QAction::triggered, this, [&]() { language_manager::instance().load_language("zh_TW"); });
+    connect(ui_->action_ja_JP, &QAction::triggered, this, [&]() { language_manager::instance().load_language("ja_JP"); });
+    connect(ui_->action_de_DE, &QAction::triggered, this, [&]() { language_manager::instance().load_language("de_DE"); });
+    connect(ui_->action_ru_RU, &QAction::triggered, this, [&]() { language_manager::instance().load_language("ru_RU"); });
+    connect(ui_->action_ko_KR, &QAction::triggered, this, [&]() { language_manager::instance().load_language("ko_KR"); });
+    connect(ui_->action_es_ES, &QAction::triggered, this, [&]() { language_manager::instance().load_language("es_ES"); });
+    connect(ui_->action_pt_BR, &QAction::triggered, this, [&]() { language_manager::instance().load_language("pt_BR"); });
     // 连接菜单和按钮动作
     connect(ui_->action_recognize, &QAction::triggered, this, &GraphicsCore::recognize_digits);
     connect(ui_->recognize, &QPushButton::clicked, this, &GraphicsCore::recognize_digits);
@@ -42,7 +42,7 @@ GraphicsCore::GraphicsCore(QWidget* parent)
     connect(ui_->picture_browse, &QPushButton::clicked, this, &GraphicsCore::import_picture);
     connect(ui_->action_about, &QAction::triggered, this, &GraphicsCore::show_about);
     connect(ui_->action_help, &QAction::triggered, this, &GraphicsCore::show_help);
-    connect(ui_->action_close, &QAction::triggered, this, [&]() { exit(0); });
+    connect(ui_->action_close, &QAction::triggered, this, [&]() { save_settings(); exit(0); });
     connect(ui_->red, &QSlider::valueChanged, this, &GraphicsCore::update_color);
     connect(ui_->green, &QSlider::valueChanged, this, &GraphicsCore::update_color);
     connect(ui_->blue, &QSlider::valueChanged, this, &GraphicsCore::update_color);
@@ -70,6 +70,21 @@ GraphicsCore::GraphicsCore(QWidget* parent)
     connect(ui_->train_label_browse, &QPushButton::clicked, this, &GraphicsCore::train_label_browse);
     connect(ui_->test_data_browse, &QPushButton::clicked, this, &GraphicsCore::test_data_browse);
     connect(ui_->test_label_browse, &QPushButton::clicked, this, &::GraphicsCore::test_label_browse);
+    // 初始化
+    this->startTimer(33); // 定时器，33ms刷新一次
+    settings_ = new QSettings("./config.ini", QSettings::IniFormat);
+    load_settings(); // 加载配置文件
+    this->setWindowTitle(chr::tr("title.application"));
+    status_message_ = new QLabel(this);
+    ui_->statusbar->addWidget(status_message_);
+    // 画布事件过滤和属性设置
+    ui_->canvas->installEventFilter(this);
+    ui_->canvas->setAttribute(Qt::WA_StaticContents);
+    ui_->canvas->setMouseTracking(1);
+    // 初始化画布
+    canvas_ = QImage(ui_->canvas->size(), QImage::Format_RGB32);
+    canvas_.fill(Qt::white);
+    update_color();
 }
 
 GraphicsCore::~GraphicsCore()
@@ -101,7 +116,7 @@ void GraphicsCore::canvas_undo()
             redo_buffer_.pop_back();
         }
         need_update_ = 1;
-        output_log("Canvas operation undone");
+        output_log(chr::tr("canvas.operation.undone"));
     }
 }
 // 画布重做操作
@@ -115,7 +130,7 @@ void GraphicsCore::canvas_redo()
             undo_buffer_.pop_back();
         }
         need_update_ = 1;
-        output_log("Canvas operation redone");
+        output_log(chr::tr("canvas.operation.redone"));
     }
 }
 // 清空画布
@@ -128,38 +143,38 @@ void GraphicsCore::canvas_clean()
         undo_buffer_.pop_back();
     }
     need_update_ = 1;
-    output_log("Canvas cleared");
+    output_log(chr::tr("canvas.operation.cleared"));
 }
 // 清空画布历史记录
 void GraphicsCore::canvas_clear()
 {
     undo_buffer_.clear();
     redo_buffer_.clear();
-    output_log("Canvas history cleared");
+    output_log(chr::tr("canvas.operation.history_cleared"));
 }
 // 识别数字
 void GraphicsCore::recognize_digits()
 {
     if (training_.isRunning()) {
-        QMessageBox::warning(this, "Warning", "It's training now");
+        QMessageBox::warning(this, chr::tr("title.warning"), chr::tr("model.train.in_progress"));
         return;
     }
     cv::Mat src = chr::image_process::qimage_to_cv_mat(canvas_);
     digits_ = chr::image_process::process_image(src); // 图像处理提取数字区域
-    std::ostringstream oss;
-    oss << "Digits recognized: ";
     if (digits_.empty()) {
-        oss << "nothing found";
+        output_log(chr::tr("recognize.result").arg(chr::tr("recognize.nothing_found")));
+        return;
     } else {
         digit_labels_.clear();
         src = chr::image_process::labelize_image(src, digits_);
         QImage dst = chr::image_process::cv_mat_to_qimage(src);
         QPainter painter(&dst);
         painter.setBrush(Qt::yellow);
+        std::ostringstream oss;
         for (const auto& digit : digits_) {
             size_t label = model_->predict(model_->forward({ digit.data })); // 使用模型预测数字
             digit_labels_.push_back(label);
-            oss << label << "; ";
+            oss << label;
             painter.setPen(Qt::NoPen); // 在画布上绘制识别结果
             painter.drawRect(digit.rect.x, digit.rect.y + digit.rect.height - 15, 8, 15);
             painter.setPen(Qt::SolidLine);
@@ -172,17 +187,17 @@ void GraphicsCore::recognize_digits()
             undo_buffer_.pop_back();
         }
         need_update_ = 1;
+        output_log(chr::tr("recognize.result").arg(oss.str()));
     }
-    output_log(oss.str().c_str());
 }
 // 导出识别到的数字
 void GraphicsCore::export_digits()
 {
     if (digits_.empty()) {
-        QMessageBox::information(this, "Information", "There's no recognized digits");
+        QMessageBox::information(this, chr::tr("title.information"), chr::tr("recognize.no_digits"));
         return;
     }
-    QString path = QFileDialog::getExistingDirectory(this, "Choose export directory", ".");
+    QString path = QFileDialog::getExistingDirectory(this, chr::tr("dialog.export.directory"), ".");
     if (path.isEmpty())
         return;
     for (size_t i = 0; i < digits_.size(); i++) {
@@ -191,7 +206,7 @@ void GraphicsCore::export_digits()
         cv::resize(mat, resized, cv::Size(160, 160));
         cv::imshow(std::to_string(digit_labels_[i]), resized);
         bool flag = 0; // 询问用户正确的标签
-        size_t real = static_cast<size_t>(QInputDialog::getInt(this, "Correct Label", "The true label you think: ", static_cast<int>(digit_labels_[i]), 0, 9, 1, &flag));
+        size_t real = static_cast<size_t>(QInputDialog::getInt(this, chr::tr("dialog.export.correct_label"), chr::tr("dialog.export.correct_label_prompt"), static_cast<int>(digit_labels_[i]), 0, 9, 1, &flag));
         if (!flag) {
             cv::imwrite(QString("%1/%2-%3.png").arg(path).arg(digit_labels_[i]).arg(digits_[i].hash).toStdString(), mat);
         } else {
@@ -199,18 +214,18 @@ void GraphicsCore::export_digits()
         }
         cv::destroyWindow(std::to_string(digit_labels_[i]));
     }
-    output_log("Digits has been exported to " + path);
+    output_log(chr::tr("export.success").arg(path));
 }
 // 导入图片
 void GraphicsCore::import_picture()
 {
-    QString path = QFileDialog::getOpenFileName(this, "Choose the picture", ".", "Images (*.png *.jpg *.jpeg *.bmp)");
+    QString path = QFileDialog::getOpenFileName(this, chr::tr("dialog.import.picture"), ".", chr::tr("file.filter.images"));
     if (path.isEmpty())
         return;
     ui_->picture_path->setText(path);
     QImage image(path);
     if (image.isNull()) {
-        QMessageBox::warning(this, "Error", "Failed to import picture");
+        QMessageBox::warning(this, chr::tr("title.error"), chr::tr("import.picture.failed"));
         return;
     }
     undo_buffer_.push_front(canvas_.copy());
@@ -222,16 +237,16 @@ void GraphicsCore::import_picture()
         undo_buffer_.pop_back();
     }
     need_update_ = 1;
-    output_log("Picture has been imported from" + path);
+    output_log(chr::tr("import.picture.success").arg(path));
 }
 // 创建模型
 void GraphicsCore::create_model()
 {
     if (training_.isRunning()) {
-        QMessageBox::warning(this, "Warning", "Training is in progress, please wait for it to complete");
+        QMessageBox::warning(this, chr::tr("title.warning"), chr::tr("model.train.in_progress"));
         return;
     }
-    QString path = QFileDialog::getSaveFileName(this, "Create New Model", ".", "CNN Model Files (*.cnn)");
+    QString path = QFileDialog::getSaveFileName(this, chr::tr("model.io.create"), ".", chr::tr("file.filter.cnn_models"));
     if (path.isEmpty()) {
         return;
     }
@@ -242,58 +257,69 @@ void GraphicsCore::create_model()
     ui_->model_path->setText(path);
     save_settings();
     try {
-        // 根据选择的模型类型创建相应模型
-        if (ui_->model_type->currentText() == "Le-Net5") {
+        QStringList items;
+        items << "LeNet-5" << "VGG16";
+        bool flag = 0;
+        std::string model_type = QInputDialog::getItem(this, chr::tr("dialog.model.type"), chr::tr("dialog.please.choose.one"), items, 0, 0, &flag).toStdString();
+        if (!flag) {
+            return;
+        }
+        if (model_type == "LeNet-5") {
             model_ = std::make_unique<chr::le_net5>();
-        } else if (ui_->model_type->currentText() == "VGG16") {
+        } else if (model_type == "VGG16") {
             model_ = std::make_unique<chr::vgg16>();
         } else {
-            throw std::runtime_error("Invalid model type");
+            throw std::runtime_error(chr::tr("model.errors.invalid_type").arg(model_type).toStdString());
         }
         // 保存新模型
         connect(model_.get(), &chr::cnn_base::inform, this, &GraphicsCore::model_inform);
         connect(model_.get(), &chr::cnn_base::train_details, this, &GraphicsCore::model_train_details);
-        model_->save_binary(path.toStdString());
+        model_->save(path.toStdString());
+        ui_->model_type->setText(model_type.c_str());
+
     } catch (const std::exception& e) {
-        QMessageBox::warning(this, "Error", QString("Failed to create model: ") + e.what());
+        QMessageBox::warning(this, chr::tr("title.error"), chr::tr("model.errors.create_failed").arg(e.what()));
         model_.reset(); // 重置模型指针
+        ui_->model_type->setText("");
     }
 }
 // 加载模型
 void GraphicsCore::load_model()
 {
-    QString path = QFileDialog::getOpenFileName(this, "Choose model file", ".", "CNN Model Files (*.cnn)");
+    QString path = QFileDialog::getOpenFileName(this, chr::tr("model.io.open"), ".", chr::tr("file.filter.cnn_models"));
     if (path.isEmpty())
         return;
     ui_->model_path->setText(path);
     save_settings();
     try {
-        // 根据选择的模型类型创建相应模型
-        if (ui_->model_type->currentText() == "Le-Net5") {
+        std::string model_type = chr::cnn_base::model_type_of(path.toStdString());
+        if (model_type == "LeNet-5") {
             model_ = std::make_unique<chr::le_net5>();
-        } else if (ui_->model_type->currentText() == "VGG16") {
+        } else if (model_type == "VGG16") {
             model_ = std::make_unique<chr::vgg16>();
         } else {
-            throw std::runtime_error("Invalid model type");
+            throw std::runtime_error(chr::tr("model.errors.invalid_type").arg(model_type).toStdString());
         }
         if (model_) {
             connect(model_.get(), &chr::cnn_base::inform, this, &GraphicsCore::model_inform);
             connect(model_.get(), &chr::cnn_base::train_details, this, &GraphicsCore::model_train_details);
-            model_->load_binary(path.toStdString()); // 加载已有模型
+            model_->load(path.toStdString()); // 加载已有模型
+            ui_->model_type->setText(model_type.c_str());
         }
     } catch (const std::exception& e) {
-        QMessageBox::warning(this, "Error", QString("Failed to load model: ") + e.what());
+        QMessageBox::warning(this, chr::tr("title.error"), chr::tr("model.errors.load_failed").arg(e.what()));
         model_.reset();
+        ui_->model_type->setText("");
     }
 }
 // 模型另存为
 void GraphicsCore::save_model_as()
 {
     if (!model_) {
-        QMessageBox::warning(this, "Warning", "No model loaded to save");
+        QMessageBox::warning(this, chr::tr("title.warning"), chr::tr("model.errors.no_model"));
         return;
     }
-    QString path = QFileDialog::getSaveFileName(this, "Save Model As", ".", "CNN Model Files (*.cnn)");
+    QString path = QFileDialog::getSaveFileName(this, chr::tr("model.io.save_as"), ".", chr::tr("file.filter.cnn_models"));
     if (path.isEmpty()) {
         return;
     }
@@ -304,39 +330,35 @@ void GraphicsCore::save_model_as()
     ui_->model_path->setText(path);
     save_settings();
     try {
-        model_->save_binary(path.toStdString());
+        model_->save(path.toStdString());
     } catch (const std::exception& e) {
-        QMessageBox::warning(this, "Error", QString("Failed to save model: ") + e.what());
+        QMessageBox::warning(this, chr::tr("title.error"), chr::tr("model.errors.save_failed").arg(e.what()));
     }
 }
 // 训练模型
 void GraphicsCore::train_model(bool show_detail)
 {
     if (!model_) {
-        QMessageBox::warning(this, "Warning", "Please choose or create a model");
+        QMessageBox::warning(this, chr::tr("title.warning"), chr::tr("model.errors.no_model_for_train"));
         return;
     }
     if (training_.isRunning()) {
-        QMessageBox::warning(this, "Warning", "It's training now");
+        QMessageBox::warning(this, chr::tr("title.warning"), chr::tr("model.train.in_progress"));
         return;
     }
     try {
         bool flag = 0; // 训练模型
-        double target = QInputDialog::getDouble(this, "Train parametre", "Target accuracy(%): ", 0, 0, 100, 4, &flag);
+        double target = QInputDialog::getDouble(this, chr::tr("dialog.train.parameters"), chr::tr("dialog.train.target_accuracy"), 0, 0, 100, 4, &flag);
         if (!flag)
             return;
-        ui_->model_train->setText("Stop Training");
+        ui_->model_train->setText(chr::tr("button.train.stop"));
         is_training_ = 1;
         // 在后台线程中执行训练
         training_ = QtConcurrent::run([this, target, show_detail]() {
-            emit output_message("Loading train data...");
+            emit output_message(chr::tr("train.data.loading"));
             auto train_dataset = chr::mnist_data::obtain_data(
                 ui_->train_data->text().toStdString(),
                 ui_->train_label->text().toStdString());
-            emit output_message("Loading test data...");
-            auto test_dataset = chr::mnist_data::obtain_data(
-                ui_->test_data->text().toStdString(),
-                ui_->test_label->text().toStdString());
             std::vector<std::vector<chr::mnist_data>> train_batches;
             std::vector<chr::mnist_data> batch;
             size_t batch_size = ui_->batch->text().toULongLong();
@@ -351,9 +373,13 @@ void GraphicsCore::train_model(bool show_detail)
             if (batch.size() > 0) {
                 train_batches.push_back(std::move(batch));
             }
-            emit output_message("Train data have been loaded");
-            emit output_message("Test data have been loaded");
-            emit output_message(QString("Starting model training - target accuracy: %1%").arg(target));
+            emit output_message(chr::tr("train.data.loaded"));
+            emit output_message(chr::tr("test.data.loading"));
+            auto test_dataset = chr::mnist_data::obtain_data(
+                ui_->test_data->text().toStdString(),
+                ui_->test_label->text().toStdString());
+            emit output_message(chr::tr("test.data.loaded"));
+            emit output_message(chr::tr("model.train.starting").arg(target));
             QMetaObject::invokeMethod(this, "save_settings", Qt::QueuedConnection);
             size_t epochs = ui_->epoch->text().toULongLong();
             double learning_rate = ui_->learning_rate->text().toDouble();
@@ -363,11 +389,11 @@ void GraphicsCore::train_model(bool show_detail)
             do {
                 accuracy = model_->train(train_batches[k], epochs, learning_rate, show_detail);
                 k = (k + 1) % train_batches.size();
-                model_->save_binary(ui_->model_path->text().toStdString());
+                model_->save(ui_->model_path->text().toStdString());
             } while (accuracy < target && !cancel_training_);
             if (!cancel_training_) {
                 size_t correct = 0;
-                emit output_message("Starting model evaluation");
+                emit output_message(chr::tr("evaluation.starting"));
                 // 在测试集上评估模型
                 for (size_t i = 0; i < test_dataset.size() && !cancel_training_; i++) {
                     auto vec = model_->forward({ test_dataset[i].image() });
@@ -386,7 +412,7 @@ void GraphicsCore::train_model(bool show_detail)
                 }
                 if (!cancel_training_) {
                     double final_accuracy = static_cast<double>(correct) / test_dataset.size() * 100.0;
-                    emit output_message(QString("Final test accuracy: %1% (%2/%3)")
+                    emit output_message(chr::tr("evaluation.final_accuracy")
                             .arg(final_accuracy, 0, 'f', 2)
                             .arg(correct)
                             .arg(test_dataset.size()));
@@ -395,28 +421,28 @@ void GraphicsCore::train_model(bool show_detail)
             emit training_finished();
         });
     } catch (const std::exception& e) {
-        QMessageBox::warning(this, "Error", QString("Training failed: ") + e.what());
+        QMessageBox::warning(this, chr::tr("title.error"), chr::tr("error.train.failed").arg(e.what()));
         is_training_ = false;
         cancel_training_ = false;
-        ui_->model_train->setText("Start Training");
+        ui_->model_train->setText(chr::tr("button.train.start"));
     }
 }
 // 停止训练
 void GraphicsCore::stop_train()
 {
     if (!training_.isRunning()) {
-        QMessageBox::information(this, "Information", "No model is training");
+        QMessageBox::information(this, chr::tr("title.information"), chr::tr("model.train.no_training"));
     } else {
-        if (QMessageBox::question(this, "Question", "Confirm to stop training") == QMessageBox::Yes) {
+        if (QMessageBox::question(this, chr::tr("title.question"), chr::tr("model.train.stop.confirm")) == QMessageBox::Yes) {
             cancel_training_ = 1;
-            output_log("Training stop requested - waiting for current batch to complete");
+            output_log(chr::tr("model.train.stop.requested"));
         }
     }
 }
 // 模型信息输出
-void GraphicsCore::model_inform(const std::string& output)
+void GraphicsCore::model_inform(const QString& output)
 {
-    output_log(QString::fromStdString(output));
+    output_log(output);
 }
 // 训练详情更新
 void GraphicsCore::model_train_details(double progress, double loss, size_t correct, size_t total)
@@ -430,7 +456,7 @@ void GraphicsCore::model_train_details(double progress, double loss, size_t corr
             oss << " ";
     }
     double accuracy = static_cast<double>(correct) / total * 100.0;
-    status_message_->setText(QString("%1 %2%, loss: %3, accuracy: %4% (%5/%6)")
+    status_message_->setText(chr::tr("model.train.progress.status")
             .arg("[" + oss.str() + "]")
             .arg(progress, 0, 'f', 2)
             .arg(loss, 0, 'f', 4)
@@ -450,25 +476,25 @@ void GraphicsCore::model_train()
 // 训练数据浏览
 void GraphicsCore::train_data_browse()
 {
-    ui_->train_data->setText(QFileDialog::getOpenFileName(this, "Choose train image file", ".", "MNIST files (*.idx3-ubyte)"));
+    ui_->train_data->setText(QFileDialog::getOpenFileName(this, chr::tr("dialog.train.data.browse"), ".", chr::tr("file.filter.mnist_images")));
     save_settings();
 }
 // 训练标签浏览
 void GraphicsCore::train_label_browse()
 {
-    ui_->train_label->setText(QFileDialog::getOpenFileName(this, "Choose train label file", ".", "MNIST files (*.idx1-ubyte)"));
+    ui_->train_label->setText(QFileDialog::getOpenFileName(this, chr::tr("dialog.train.labels.browse"), ".", chr::tr("file.filter.mnist_labels")));
     save_settings();
 }
 // 测试数据浏览
 void GraphicsCore::test_data_browse()
 {
-    ui_->test_data->setText(QFileDialog::getOpenFileName(this, "Choose test image file", ".", "MNIST files (*.idx3-ubyte)"));
+    ui_->test_data->setText(QFileDialog::getOpenFileName(this, chr::tr("dialog.test.data.browse"), ".", chr::tr("file.filter.mnist_images")));
     save_settings();
 }
 // 测试标签浏览
 void GraphicsCore::test_label_browse()
 {
-    ui_->test_label->setText(QFileDialog::getOpenFileName(this, "Choose test label file", ".", "MNIST files (*.idx1-ubyte)"));
+    ui_->test_label->setText(QFileDialog::getOpenFileName(this, chr::tr("dialog.test.labels.browse"), ".", chr::tr("file.filter.mnist_labels")));
     save_settings();
 }
 // 更新输出信息
@@ -492,7 +518,7 @@ void GraphicsCore::handle_training_finished()
     status_message_->setText("");
     cancel_training_ = false;
     is_training_ = false;
-    ui_->model_train->setText("Start Training");
+    ui_->model_train->setText(chr::tr("button.train.start"));
 }
 // 事件过滤器，处理画布鼠标事件
 bool GraphicsCore::eventFilter(QObject* obj, QEvent* event)
@@ -542,8 +568,9 @@ void GraphicsCore::timerEvent(QTimerEvent* event)
 // 关闭事件处理
 void GraphicsCore::closeEvent(QCloseEvent* event)
 {
+    save_settings();
     if (training_.isRunning()) {
-        if (QMessageBox::question(this, "Question", "It's training; closing would kill the process") == QMessageBox::Yes) {
+        if (QMessageBox::question(this, chr::tr("title.question"), chr::tr("application.close.training_warning")) == QMessageBox::Yes) {
             exit(0);
         }
     } else {
@@ -570,6 +597,101 @@ void GraphicsCore::output_log(const QString& output)
     QString timestamp = QDateTime::currentDateTime().toString("hh:mm:ss");
     ui_->output->append("[" + timestamp + "]: " + output);
 }
+
+void GraphicsCore::update_ui_language(bool changed, const QString& path)
+{
+    if (!changed) {
+        QMessageBox::warning(this, chr::tr("title.warning"), chr::tr("error.change_language").arg(path));
+        return;
+    }
+    // 更新窗口标题
+    this->setWindowTitle(chr::tr("title.application"));
+
+    // 更新菜单文本
+    ui_->menu_file->setTitle(chr::tr("ui.menu.files"));
+    ui_->menu_edit->setTitle(chr::tr("ui.menu.edit"));
+    ui_->menu_train->setTitle(chr::tr("ui.menu.train"));
+    ui_->menu_help->setTitle(chr::tr("ui.menu.help"));
+
+    // 更新文件菜单项
+    ui_->action_new_model->setText(chr::tr("ui.menu.new_model"));
+    ui_->action_open_model->setText(chr::tr("ui.menu.open_model"));
+    ui_->action_save_as->setText(chr::tr("ui.menu.save_as"));
+    ui_->action_import_picture->setText(chr::tr("ui.button.import_picture"));
+    ui_->action_export->setText(chr::tr("ui.menu.export"));
+    ui_->action_close->setText(chr::tr("ui.menu.close"));
+
+    // 更新编辑菜单项
+    ui_->action_undo->setText(chr::tr("ui.button.undo"));
+    ui_->action_redo->setText(chr::tr("ui.button.redo"));
+    ui_->action_clean->setText(chr::tr("ui.button.clean_canvas"));
+    ui_->action_clear->setText(chr::tr("ui.menu.clear_buffer"));
+    ui_->action_recognize->setText(chr::tr("ui.button.recognize"));
+    ui_->action_clear_output->setText(chr::tr("ui.menu.clear_output"));
+
+    // 更新训练菜单项
+    ui_->action_train_simple->setText(chr::tr("ui.menu.train_simple"));
+    ui_->action_train_detailed->setText(chr::tr("ui.menu.train_detailed"));
+    ui_->action_stop_train->setText(chr::tr("button.train.stop"));
+    ui_->action_save->setText(chr::tr("ui.menu.save_config"));
+
+    // 更新帮助菜单项
+    ui_->action_help->setText(chr::tr("ui.menu.help_content"));
+    ui_->action_about->setText(chr::tr("ui.menu.about"));
+    ui_->menu_language->setTitle(chr::tr("ui.menu.language"));
+    ui_->action_en_US->setText(chr::tr("ui.menu.language_american_english"));
+    ui_->action_zh_CN->setText(chr::tr("ui.menu.language_simplified_chinese"));
+    ui_->action_en_UK->setText(chr::tr("ui.menu.language_british_english"));
+    ui_->action_fr_FR->setText(chr::tr("ui.menu.language_french"));
+    ui_->action_zh_TW->setText(chr::tr("ui.menu.language_traditional_chinese"));
+    ui_->action_ja_JP->setText(chr::tr("ui.menu.language_japanese"));
+    ui_->action_de_DE->setText(chr::tr("ui.menu.language_german"));
+    ui_->action_ru_RU->setText(chr::tr("ui.menu.language_russian"));
+    ui_->action_ko_KR->setText(chr::tr("ui.menu.language_korean"));
+    ui_->action_es_ES->setText(chr::tr("ui.menu.language_spanish"));
+    ui_->action_pt_BR->setText(chr::tr("ui.menu.language_portuguese"));
+
+    // 更新组框标题
+    ui_->groupBox->setTitle(chr::tr("ui.group.canvas"));
+    ui_->groupBox_2->setTitle(chr::tr("ui.group.model"));
+    ui_->groupBox_3->setTitle(chr::tr("ui.group.output"));
+    ui_->groupBox_4->setTitle(chr::tr("ui.group.painting"));
+
+    // 更新模型组标签
+    ui_->label_train_data->setText(chr::tr("ui.label.train_data"));
+    ui_->label_train_label->setText(chr::tr("ui.label.train_label"));
+    ui_->label_test_data->setText(chr::tr("ui.label.test_data"));
+    ui_->label_test_label->setText(chr::tr("ui.label.test_label"));
+    ui_->lable_model_path->setText(chr::tr("ui.label.model_path"));
+    ui_->lable_model_type->setText(chr::tr("ui.label.model_type"));
+    ui_->label_batch->setText(chr::tr("ui.label.batch_size"));
+    ui_->label_epoch->setText(chr::tr("ui.label.epoch_times"));
+    ui_->label_learning_rate->setText(chr::tr("ui.label.learning_rate"));
+
+    // 更新绘画组标签和按钮
+    ui_->undo->setText(chr::tr("ui.button.undo"));
+    ui_->redo->setText(chr::tr("ui.button.redo"));
+    ui_->clean->setText(chr::tr("ui.button.clean_canvas"));
+    ui_->recognize->setText(chr::tr("ui.button.recognize"));
+    ui_->label_import_picture->setText(chr::tr("ui.button.import_picture"));
+
+    // 更新按钮文本
+    ui_->train_data_browse->setText(chr::tr("ui.button.browse"));
+    ui_->train_label_browse->setText(chr::tr("ui.button.browse"));
+    ui_->test_data_browse->setText(chr::tr("ui.button.browse"));
+    ui_->test_label_browse->setText(chr::tr("ui.button.browse"));
+    ui_->model_browse->setText(chr::tr("ui.button.load"));
+    ui_->picture_browse->setText(chr::tr("ui.button.browse"));
+
+    // 更新训练按钮文本
+    if (is_training_) {
+        ui_->model_train->setText(chr::tr("button.train.stop"));
+    } else {
+        ui_->model_train->setText(chr::tr("button.train.start"));
+    }
+
+    save_settings();
+}
 // 加载设置
 void GraphicsCore::load_settings()
 {
@@ -578,28 +700,30 @@ void GraphicsCore::load_settings()
     ui_->test_data->setText(settings_->value("test_data").toString());
     ui_->test_label->setText(settings_->value("test_label").toString());
     ui_->model_path->setText(settings_->value("model_path").toString());
-    ui_->model_type->setCurrentIndex(settings_->value("model_type").toInt());
     try {
-        // 根据选择的模型类型创建相应模型
-        if (ui_->model_type->currentText() == "Le-Net5") {
+        std::string model_type = chr::cnn_base::model_type_of(ui_->model_path->text().toStdString());
+        if (model_type == "LeNet-5") {
             model_ = std::make_unique<chr::le_net5>();
-        } else if (ui_->model_type->currentText() == "VGG16") {
+        } else if (model_type == "VGG16") {
             model_ = std::make_unique<chr::vgg16>();
         } else {
-            throw std::runtime_error("Invalid model type");
+            throw std::runtime_error(chr::tr("model.errors.invalid_type").arg(model_type).toStdString());
         }
         if (model_) {
             connect(model_.get(), &chr::cnn_base::inform, this, &GraphicsCore::model_inform);
             connect(model_.get(), &chr::cnn_base::train_details, this, &GraphicsCore::model_train_details);
-            model_->load_binary(ui_->model_path->text().toStdString()); // 加载已有模型
+            model_->load(ui_->model_path->text().toStdString()); // 加载已有模型
+            ui_->model_type->setText(model_type.c_str());
         }
     } catch (const std::exception& e) {
-        QMessageBox::warning(this, "Error", QString("Failed to load model: ") + e.what());
+        QMessageBox::warning(this, chr::tr("title.error"), chr::tr("model.errors.load_failed").arg(e.what()));
         model_.reset();
+        ui_->model_type->setText("");
     }
     ui_->batch->setText(settings_->value("batch").toString());
     ui_->epoch->setText(settings_->value("epoch").toString());
     ui_->learning_rate->setText(settings_->value("learning_rate").toString());
+    language_manager::instance().load_language(settings_->value("language").toString());
 }
 // 保存设置
 void GraphicsCore::save_settings()
@@ -609,75 +733,23 @@ void GraphicsCore::save_settings()
     settings_->setValue("test_data", ui_->test_data->text());
     settings_->setValue("test_label", ui_->test_label->text());
     settings_->setValue("model_path", ui_->model_path->text());
-    settings_->setValue("model_type", ui_->model_type->currentIndex());
     settings_->setValue("batch", ui_->batch->text());
     settings_->setValue("epoch", ui_->epoch->text());
     settings_->setValue("learning_rate", ui_->learning_rate->text());
+    settings_->setValue("language", language_manager::instance().current_language());
 }
 
 void GraphicsCore::show_about()
 {
     QMessageBox::about(this,
-        tr("About GraphicsCore"),
-        tr("<h3>GraphicsCore - CNN Handwritten Digit Recognition</h3>"
-           "<p>Version 1.0.1</p>"
-           "<p>This application provides a comprehensive solution for handwritten digit "
-           "recognition using Convolutional Neural Networks (CNN).</p>"
-           "<p><b>Features:</b></p>"
-           "<ul>"
-           "<li>Interactive canvas for digit drawing</li>"
-           "<li>Support for multiple CNN architectures (LeNet-5, VGG16)</li>"
-           "<li>Model training with MNIST dataset</li>"
-           "<li>Real-time digit recognition</li>"
-           "<li>Batch processing and export capabilities</li>"
-           "</ul>"
-           "<p>Developed using Qt framework and custom CNN implementation.</p>"
-           "<p>© 2025 Chrollis Phrott. All rights reserved.</p>"));
+        chr::tr("dialog.about.title"),
+        chr::tr("about.content"));
 }
 
 // Help对话框
 void GraphicsCore::show_help()
 {
     QMessageBox::information(this,
-        tr("GraphicsCore Help"),
-        tr("<h3>Getting Started with GraphicsCore</h3>"
-
-           "<p><b>Basic Workflow:</b></p>"
-           "<ol>"
-           "<li><b>Setup Model:</b> Choose a model type and load/create a model file</li>"
-           "<li><b>Prepare Data:</b> Load MNIST training and test datasets</li>"
-           "<li><b>Train Model:</b> Configure parameters and start training</li>"
-           "<li><b>Draw & Recognize:</b> Use the canvas to draw digits and recognize them</li>"
-           "</ol>"
-
-           "<p><b>Canvas Operations:</b></p>"
-           "<ul>"
-           "<li><b>Draw:</b> Click and drag on canvas to draw digits</li>"
-           "<li><b>Color:</b> Adjust RGB sliders to change brush color</li>"
-           "<li><b>Undo/Redo:</b> Use undo/redo buttons or Ctrl+Z/Ctrl+Shift+Z</li>"
-           "<li><b>Clear:</b> Clean canvas with Clean button or Ctrl+Shift+C</li>"
-           "</ul>"
-
-           "<p><b>Model Training:</b></p>"
-           "<ul>"
-           "<li><b>Batch Size:</b> Number of samples per training batch</li>"
-           "<li><b>Epoch Times:</b> Number of training iterations</li>"
-           "<li><b>Learning Rate:</b> Step size for weight updates</li>"
-           "<li><b>Target Accuracy:</b> Training stops when this accuracy is reached</li>"
-           "</ul>"
-
-           "<p><b>Supported Model Types:</b></p>"
-           "<ul>"
-           "<li><b>LeNet-5:</b> Classic CNN architecture for digit recognition</li>"
-           "<li><b>VGG16:</b> Deeper network with better feature extraction</li>"
-           "</ul>"
-
-           "<p><b>File Formats:</b></p>"
-           "<ul>"
-           "<li><b>Model Files:</b> *.cnn (custom CNN binary format)</li>"
-           "<li><b>MNIST Data:</b> *.idx3-ubyte (images), *.idx1-ubyte (labels)</li>"
-           "<li><b>Import Images:</b> PNG, JPG, JPEG, BMP</li>"
-           "</ul>"
-
-           "<p>Check the output panel for detailed operation logs and training progress.</p>"));
+        chr::tr("dialog.help.title"),
+        chr::tr("help.content"));
 }

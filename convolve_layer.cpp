@@ -1,4 +1,5 @@
 #include "convolve_layer.hpp"
+#include "language_manager.h"
 
 namespace chr {
 convolve_layer::convolve_layer(size_t in_channels, size_t kernel_size, size_t out_channels, size_t padding, size_t stride, activation_function_type activate_type)
@@ -73,18 +74,61 @@ void convolve_layer::weights_update(double learning_rate, const std::vector<Eige
         filters_[i].bias -= learning_rate * gradient[i].sum();
     }
 }
-void convolve_layer::save(const std::filesystem::path& path) const
+void convolve_layer::save(std::ostream& file) const
 {
-    std::filesystem::create_directory(path);
-    for (size_t i = 0; i < filters_.size(); ++i) {
-        filters_[i].save(path / ("filter_" + std::to_string(i) + ".txt"));
+    // 保存卷积层基本信息
+    uint32_t in_channels = in_channels_;
+    uint32_t kernel_size = kernel_size_;
+    uint32_t out_channels = out_channels_;
+    uint32_t padding = padding_;
+    uint32_t stride = stride_;
+    file.write(reinterpret_cast<const char*>(&in_channels), sizeof(in_channels));
+    file.write(reinterpret_cast<const char*>(&kernel_size), sizeof(kernel_size));
+    file.write(reinterpret_cast<const char*>(&out_channels), sizeof(out_channels));
+    file.write(reinterpret_cast<const char*>(&padding), sizeof(padding));
+    file.write(reinterpret_cast<const char*>(&stride), sizeof(stride));
+    // 保存所有filter的参数
+    for (const auto& filter : filters_) {
+        // 保存偏置
+        file.write(reinterpret_cast<const char*>(&filter.bias), sizeof(filter.bias));
+        // 保存所有卷积核
+        for (size_t i = 0; i < in_channels_; ++i) {
+            for (size_t row = 0; row < kernel_size_; ++row) {
+                for (size_t col = 0; col < kernel_size_; ++col) {
+                    double weight = filter.kernels[i](row, col);
+                    file.write(reinterpret_cast<const char*>(&weight), sizeof(weight));
+                }
+            }
+        }
     }
 }
-void convolve_layer::load(const std::filesystem::path& path)
+void convolve_layer::load(std::istream &file)
 {
-    std::filesystem::create_directory(path);
-    for (size_t i = 0; i < filters_.size(); ++i) {
-        filters_[i].load(path / ("filter_" + std::to_string(i) + ".txt"));
+    // 读取卷积层基本信息
+    uint32_t in_channels, kernel_size, out_channels, padding, stride;
+    file.read(reinterpret_cast<char*>(&in_channels), sizeof(in_channels));
+    file.read(reinterpret_cast<char*>(&kernel_size), sizeof(kernel_size));
+    file.read(reinterpret_cast<char*>(&out_channels), sizeof(out_channels));
+    file.read(reinterpret_cast<char*>(&padding), sizeof(padding));
+    file.read(reinterpret_cast<char*>(&stride), sizeof(stride));
+    // 验证参数是否匹配
+    if (in_channels != in_channels_ || kernel_size != kernel_size_ || out_channels != out_channels_ || padding != padding_ || stride != stride_) {
+        throw std::runtime_error(chr::tr("error.convolution.parameter_mismatch").toStdString());
+    }
+    // 读取所有filter的参数
+    for (auto& filter : filters_) {
+        // 读取偏置
+        file.read(reinterpret_cast<char*>(&filter.bias), sizeof(filter.bias));
+        // 读取所有卷积核
+        for (size_t i = 0; i < in_channels_; ++i) {
+            for (size_t row = 0; row < kernel_size_; ++row) {
+                for (size_t col = 0; col < kernel_size_; ++col) {
+                    double weight;
+                    file.read(reinterpret_cast<char*>(&weight), sizeof(weight));
+                    filter.kernels[i](row, col) = weight;
+                }
+            }
+        }
     }
 }
 std::vector<Eigen::MatrixXd> convolve_layer::padding(const std::vector<Eigen::MatrixXd>& input, size_t circle_num, double fill_num) const
@@ -103,12 +147,12 @@ std::vector<Eigen::MatrixXd> convolve_layer::padding(const std::vector<Eigen::Ma
 Eigen::MatrixXd convolve_layer::convolve(const Eigen::MatrixXd& input, const Eigen::MatrixXd& kernel, size_t stride) const
 {
     if (input.rows() < kernel.rows() || input.cols() < kernel.cols()) {
-        throw std::invalid_argument("input dimension is smaller that kernel dimension");
+        throw std::invalid_argument(chr::tr("error.convolution.input_too_small").toStdString());
     }
     long output_rows = static_cast<long>((input.rows() - kernel.rows()) / stride) + 1;
     long output_cols = static_cast<long>((input.cols() - kernel.cols()) / stride) + 1;
     if (output_rows <= 0 || output_cols <= 0) {
-        throw std::invalid_argument("outcome dimension is not positive");
+        throw std::invalid_argument(chr::tr("error.convolution.output_not_positive").toStdString());
     }
     Eigen::MatrixXd result = Eigen::MatrixXd::Zero(output_rows, output_cols);
     Eigen::Map<const Eigen::VectorXd> kernel_flat(kernel.data(), kernel.size());
@@ -142,63 +186,5 @@ std::vector<Eigen::MatrixXd> convolve_layer::remove_padding(const std::vector<Ei
         result.push_back(matrix.block(padding, padding, matrix.rows() - 2 * padding, matrix.cols() - 2 * padding));
     }
     return result;
-}
-void convolve_layer::save_binary(std::ostream& file) const
-{
-    // 保存卷积层基本信息
-    uint32_t in_channels = in_channels_;
-    uint32_t kernel_size = kernel_size_;
-    uint32_t out_channels = out_channels_;
-    uint32_t padding = padding_;
-    uint32_t stride = stride_;
-    file.write(reinterpret_cast<const char*>(&in_channels), sizeof(in_channels));
-    file.write(reinterpret_cast<const char*>(&kernel_size), sizeof(kernel_size));
-    file.write(reinterpret_cast<const char*>(&out_channels), sizeof(out_channels));
-    file.write(reinterpret_cast<const char*>(&padding), sizeof(padding));
-    file.write(reinterpret_cast<const char*>(&stride), sizeof(stride));
-    // 保存所有filter的参数
-    for (const auto& filter : filters_) {
-        // 保存偏置
-        file.write(reinterpret_cast<const char*>(&filter.bias), sizeof(filter.bias));
-        // 保存所有卷积核
-        for (size_t i = 0; i < in_channels_; ++i) {
-            for (size_t row = 0; row < kernel_size_; ++row) {
-                for (size_t col = 0; col < kernel_size_; ++col) {
-                    double weight = filter.kernels[i](row, col);
-                    file.write(reinterpret_cast<const char*>(&weight), sizeof(weight));
-                }
-            }
-        }
-    }
-}
-
-void convolve_layer::load_binary(std::istream& file)
-{
-    // 读取卷积层基本信息
-    uint32_t in_channels, kernel_size, out_channels, padding, stride;
-    file.read(reinterpret_cast<char*>(&in_channels), sizeof(in_channels));
-    file.read(reinterpret_cast<char*>(&kernel_size), sizeof(kernel_size));
-    file.read(reinterpret_cast<char*>(&out_channels), sizeof(out_channels));
-    file.read(reinterpret_cast<char*>(&padding), sizeof(padding));
-    file.read(reinterpret_cast<char*>(&stride), sizeof(stride));
-    // 验证参数是否匹配
-    if (in_channels != in_channels_ || kernel_size != kernel_size_ || out_channels != out_channels_ || padding != padding_ || stride != stride_) {
-        throw std::runtime_error("Convolution layer parameter mismatch");
-    }
-    // 读取所有filter的参数
-    for (auto& filter : filters_) {
-        // 读取偏置
-        file.read(reinterpret_cast<char*>(&filter.bias), sizeof(filter.bias));
-        // 读取所有卷积核
-        for (size_t i = 0; i < in_channels_; ++i) {
-            for (size_t row = 0; row < kernel_size_; ++row) {
-                for (size_t col = 0; col < kernel_size_; ++col) {
-                    double weight;
-                    file.read(reinterpret_cast<char*>(&weight), sizeof(weight));
-                    filter.kernels[i](row, col) = weight;
-                }
-            }
-        }
-    }
 }
 }

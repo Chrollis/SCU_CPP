@@ -24,8 +24,6 @@ public:
     std::vector<Eigen::MatrixXd> backward(size_t label, double learning_rate) override;
     void save(const std::filesystem::path& path) override;
     void load(const std::filesystem::path& path) override;
-    void save_binary(const std::filesystem::path& path) override;
-    void load_binary(const std::filesystem::path& path) override;
     std::string model_type() const override { return "LeNet-5"; }
 };
 }

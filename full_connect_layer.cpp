@@ -1,4 +1,5 @@
 #include "full_connect_layer.hpp"
+#include "language_manager.h"
 #include <fstream>
 #include <random>
 
@@ -43,50 +44,7 @@ void full_connect_layer::weights_update(double learning_rate)
     // 偏置更新：biases -= 学习率 * 梯度
     biases_ -= learning_rate * gradient_;
 }
-void full_connect_layer::save(const std::filesystem::path& path) const
-{
-    std::ofstream file(path);
-    if (file.is_open()) {
-        file << in_size_ << " " << out_size_ << "\n";
-        file << weights_ << "\n";
-        file << biases_.transpose() << "\n";
-        file.close();
-    }
-}
-void full_connect_layer::load(const std::filesystem::path& path)
-{
-    std::ifstream file(path);
-    if (file.is_open()) {
-        size_t in_size, out_size;
-        file >> in_size >> out_size;
-        weights_.resize(out_size, in_size);
-        biases_.resize(out_size);
-        for (size_t i = 0; i < out_size; ++i) {
-            for (size_t j = 0; j < in_size; ++j) {
-                file >> weights_(i, j);
-            }
-        }
-        for (size_t i = 0; i < out_size; ++i) {
-            file >> biases_(i);
-        }
-        file.close();
-    }
-}
-void full_connect_layer::initialize_weights()
-{
-    weights_.resize(out_size_, in_size_);
-    biases_.resize(out_size_);
-    std::random_device rd;
-    std::default_random_engine generator(rd());
-    std::normal_distribution<double> distribution(0.0, 0.01); // 使用小方差高斯分布
-    for (size_t i = 0; i < out_size_; ++i) {
-        for (size_t j = 0; j < in_size_; ++j) {
-            weights_(i, j) = distribution(generator);
-        }
-        biases_(i) = distribution(generator);
-    }
-}
-void full_connect_layer::save_binary(std::ostream& file) const
+void full_connect_layer::save(std::ostream& file) const
 {
     // 保存全连接层基本信息
     uint32_t in_size = in_size_;
@@ -106,8 +64,7 @@ void full_connect_layer::save_binary(std::ostream& file) const
         file.write(reinterpret_cast<const char*>(&bias), sizeof(bias));
     }
 }
-
-void full_connect_layer::load_binary(std::istream& file)
+void full_connect_layer::load(std::istream& file)
 {
     // 读取全连接层基本信息
     uint32_t in_size, out_size;
@@ -115,7 +72,7 @@ void full_connect_layer::load_binary(std::istream& file)
     file.read(reinterpret_cast<char*>(&out_size), sizeof(out_size));
     // 验证参数是否匹配
     if (in_size != in_size_ || out_size != out_size_) {
-        throw std::runtime_error("Full connect layer parameter mismatch");
+        throw std::runtime_error(chr::tr("error.fully_connected.parameter_mismatch").toStdString());
     }
     // 读取权重矩阵
     for (size_t i = 0; i < out_size_; ++i) {
@@ -130,6 +87,20 @@ void full_connect_layer::load_binary(std::istream& file)
         double bias;
         file.read(reinterpret_cast<char*>(&bias), sizeof(bias));
         biases_(i) = bias;
+    }
+}
+void full_connect_layer::initialize_weights()
+{
+    weights_.resize(out_size_, in_size_);
+    biases_.resize(out_size_);
+    std::random_device rd;
+    std::default_random_engine generator(rd());
+    std::normal_distribution<double> distribution(0.0, 0.01); // 使用小方差高斯分布
+    for (size_t i = 0; i < out_size_; ++i) {
+        for (size_t j = 0; j < in_size_; ++j) {
+            weights_(i, j) = distribution(generator);
+        }
+        biases_(i) = distribution(generator);
     }
 }
 }

@@ -3,7 +3,6 @@
 
 #include "activation_function.hpp"
 #include <Eigen/Dense>
-#include <filesystem>
 
 namespace chr {
 class full_connect_layer {
@@ -22,10 +21,8 @@ public:
     Eigen::VectorXd forward(const Eigen::VectorXd& input);
     Eigen::VectorXd backward(const Eigen::VectorXd& gradient, double learning_rate, bool is_output_layer = false, size_t label = 0);
     void weights_update(double learning_rate);
-    void save(const std::filesystem::path& path) const;
-    void load(const std::filesystem::path& path);
-    void save_binary(std::ostream& file) const;
-    void load_binary(std::istream& file);
+    void save(std::ostream& file) const;
+    void load(std::istream& file);
 
 private:
     void initialize_weights();

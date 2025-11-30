@@ -176,25 +176,6 @@
          </property>
         </widget>
        </item>
-       <item row="2" column="4">
-        <widget class="QComboBox" name="model_type">
-         <item>
-          <property name="text">
-           <string>None</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>Le-Net5</string>
-          </property>
-         </item>
-         <item>
-          <property name="text">
-           <string>VGG16</string>
-          </property>
-         </item>
-        </widget>
-       </item>
        <item row="4" column="3">
         <widget class="QLabel" name="label_epoch">
          <property name="text">
@@ -223,6 +204,13 @@
         <widget class="QPushButton" name="model_train">
          <property name="text">
           <string>Start Training</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="4">
+        <widget class="QLineEdit" name="model_type">
+         <property name="readOnly">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -461,9 +449,29 @@
     <property name="title">
      <string>Help(&amp;H)</string>
     </property>
+    <widget class="QMenu" name="menu_language">
+     <property name="title">
+      <string>Language(&amp;L)</string>
+     </property>
+     <property name="icon">
+      <iconset theme="QIcon::ThemeIcon::NetworkOffline"/>
+     </property>
+     <addaction name="action_en_US"/>
+     <addaction name="action_zh_CN"/>
+     <addaction name="action_zh_TW"/>
+     <addaction name="action_en_UK"/>
+     <addaction name="action_fr_FR"/>
+     <addaction name="action_ja_JP"/>
+     <addaction name="action_de_DE"/>
+     <addaction name="action_ru_RU"/>
+     <addaction name="action_ko_KR"/>
+     <addaction name="action_es_ES"/>
+     <addaction name="action_pt_BR"/>
+    </widget>
     <addaction name="action_help"/>
     <addaction name="separator"/>
     <addaction name="action_about"/>
+    <addaction name="menu_language"/>
    </widget>
    <widget class="QMenu" name="menu_edit">
     <property name="title">
@@ -512,9 +520,6 @@
    <property name="text">
     <string>Import Picture</string>
    </property>
-   <property name="shortcut">
-    <string>Ctrl+I</string>
-   </property>
   </action>
   <action name="action_train_detailed">
    <property name="icon">
@@ -522,9 +527,6 @@
    </property>
    <property name="text">
     <string>Train (Detailed)</string>
-   </property>
-   <property name="shortcut">
-    <string>Alt+D</string>
    </property>
   </action>
   <action name="action_train_simple">
@@ -534,9 +536,6 @@
    <property name="text">
     <string>Train (Simple)</string>
    </property>
-   <property name="shortcut">
-    <string>Alt+T</string>
-   </property>
   </action>
   <action name="action_about">
    <property name="icon">
@@ -544,9 +543,6 @@
    </property>
    <property name="text">
     <string>About</string>
-   </property>
-   <property name="shortcut">
-    <string>Alt+O</string>
    </property>
   </action>
   <action name="action_undo">
@@ -578,9 +574,6 @@
    <property name="text">
     <string>Clean Canvas</string>
    </property>
-   <property name="shortcut">
-    <string>Ctrl+Shift+C</string>
-   </property>
   </action>
   <action name="action_recognize">
    <property name="icon">
@@ -588,9 +581,6 @@
    </property>
    <property name="text">
     <string>Recognize</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+D</string>
    </property>
   </action>
   <action name="action_clear">
@@ -600,9 +590,6 @@
    <property name="text">
     <string>Clear Buffer</string>
    </property>
-   <property name="shortcut">
-    <string>Ctrl+Shift+D</string>
-   </property>
   </action>
   <action name="action_export">
    <property name="icon">
@@ -610,9 +597,6 @@
    </property>
    <property name="text">
     <string>Export Recognized Items</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+E</string>
    </property>
   </action>
   <action name="action_close">
@@ -633,9 +617,6 @@
    <property name="text">
     <string>Stop Training</string>
    </property>
-   <property name="shortcut">
-    <string>Ctrl+K</string>
-   </property>
   </action>
   <action name="action_save">
    <property name="icon">
@@ -655,9 +636,6 @@
    <property name="text">
     <string>Clear Output</string>
    </property>
-   <property name="shortcut">
-    <string>Ctrl+Shift+O</string>
-   </property>
   </action>
   <action name="action_help">
    <property name="icon">
@@ -665,9 +643,6 @@
    </property>
    <property name="text">
     <string>Help</string>
-   </property>
-   <property name="shortcut">
-    <string>Ctrl+H</string>
    </property>
   </action>
   <action name="action_save_as">
@@ -677,8 +652,93 @@
    <property name="text">
     <string>Save As</string>
    </property>
-   <property name="shortcut">
-    <string>Ctrl+A</string>
+  </action>
+  <action name="action_en_US">
+   <property name="icon">
+    <iconset theme="QIcon::ThemeIcon::FormatJustifyCenter"/>
+   </property>
+   <property name="text">
+    <string>American English (en_US)</string>
+   </property>
+  </action>
+  <action name="action_zh_CN">
+   <property name="icon">
+    <iconset theme="QIcon::ThemeIcon::FormatJustifyCenter"/>
+   </property>
+   <property name="text">
+    <string>Simplified Chinese (zh_CN)</string>
+   </property>
+  </action>
+  <action name="action_zh_TW">
+   <property name="icon">
+    <iconset theme="QIcon::ThemeIcon::FormatJustifyCenter"/>
+   </property>
+   <property name="text">
+    <string>Traditional Chinese (zh_TW)</string>
+   </property>
+  </action>
+  <action name="action_en_UK">
+   <property name="icon">
+    <iconset theme="QIcon::ThemeIcon::FormatJustifyCenter"/>
+   </property>
+   <property name="text">
+    <string>British English (en_UK)</string>
+   </property>
+  </action>
+  <action name="action_fr_FR">
+   <property name="icon">
+    <iconset theme="QIcon::ThemeIcon::FormatJustifyCenter"/>
+   </property>
+   <property name="text">
+    <string>French (fr_FR)</string>
+   </property>
+  </action>
+  <action name="action_ja_JP">
+   <property name="icon">
+    <iconset theme="QIcon::ThemeIcon::FormatJustifyCenter"/>
+   </property>
+   <property name="text">
+    <string>Japanese (ja_JP)</string>
+   </property>
+  </action>
+  <action name="action_de_DE">
+   <property name="icon">
+    <iconset theme="QIcon::ThemeIcon::FormatJustifyCenter"/>
+   </property>
+   <property name="text">
+    <string>German (de_DE)</string>
+   </property>
+  </action>
+  <action name="action_ru_RU">
+   <property name="icon">
+    <iconset theme="QIcon::ThemeIcon::FormatJustifyCenter"/>
+   </property>
+   <property name="text">
+    <string>Russian (ru_RU)</string>
+   </property>
+  </action>
+  <action name="action_ko_KR">
+   <property name="icon">
+    <iconset theme="QIcon::ThemeIcon::FormatJustifyCenter"/>
+   </property>
+   <property name="text">
+    <string>Korean (ko_KR)</string>
+   </property>
+  </action>
+  <action name="action_es_ES">
+   <property name="icon">
+    <iconset theme="QIcon::ThemeIcon::FormatJustifyCenter"/>
+   </property>
+   <property name="text">
+    <string>Spanish (es_ES)</string>
+   </property>
+  </action>
+  <action name="action_pt_BR">
+   <property name="icon">
+    <iconset theme="QIcon::ThemeIcon::FormatJustifyCenter"/>
+   </property>
+   <property name="text">
+    <string>Portuguese (pt_BR)</string>
    </property>
   </action>
  </widget>
